@@ -55,7 +55,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          context: src/app/Dockerfile
+          context: /src/app/Dockerfile
           tags: ${{ env.CR_REGISTRY }}/${{ env.CR_REPO }}:${{ env.GIT_VER }}
       
     outputs:
