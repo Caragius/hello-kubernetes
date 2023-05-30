@@ -1,4 +1,5 @@
 # Это мое тестовое задание
+# Задание: настроить Pipeline Ci/CD для сборки и публикации изменений
 name: Docker and Helm Build and Push
 
 
@@ -25,19 +26,22 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
+      
+      # Логин в Yandex Cloud на случай развертывания в облаке  
 
       #- name: Login in Yandex Cloud
       #  uses: yc-actions/yc-cr-login@v0.1-alpha
       #  with:
       #    yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
 
-
+      # Логин в Container Registry
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
+      
+      # Создаем переменную, которая будет использоваться в качестве тега для образа
       - name: Get version
         id: getver
         run: echo "GIT_VER=$(git describe --match "v*" --abbrev=4 --tags --always)-$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
@@ -75,12 +79,17 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      # Разворачивание в Yandex Cloud
+          
       #- name: Deploy Helm chart 
       #  uses: okar1/yc-helm@master
       #  with:
       #    SA_KEY: ${{ secrets.YC_SA_JSON_CREDENTIALS_FOR_HELM }}
       #    K8S_CLUSTER_ID: ${{ vars.K8S_CLUSTER_ID }}
-      #    HELM_ARGS: upgrade --install -n=prj-chatgpt-prod prj-chatgpt-prod ./ops-tools/helm/chatgpt-bot -f ./ops-tools/helm/chatgpt-bot/setting/prod.yaml --set app.image.repository=cr.yandex/${{ env.CR_REGISTRY }}/${{ env.CR_REPO }},app.image.tag=${{ env.GIT_VER }}
+      #    helm upgrade --install --create-namespace --namespace hello-kubernetes hello-world deploy/helm/hello-kubernetes/ --set deployment.container.image.repository=${{ env.CR_REGISTRY }}/${{ env.CR_REPO }},deployment.container.image.tag=${{ env.GIT_VER }}
+      
+      # Развертывание на собственном сервере с Minikube   
 
       - name: Deploy
         uses: appleboy/ssh-action@v0.1.10
