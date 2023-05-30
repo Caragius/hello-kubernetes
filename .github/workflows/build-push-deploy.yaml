@@ -3,7 +3,7 @@ name: Docker and Helm Build and Push
 
 
 on:
-  pull_request: # добавить еще и на пуш
+  pull_request: 
     branches:
       - main
   push:
@@ -60,3 +60,35 @@ jobs:
       
     outputs:
           GIT_VER: ${{ env.GIT_VER }}
+
+
+
+  helm-deploy:
+    runs-on: ubuntu-latest
+    needs:  [build-and-push]
+    env:
+      GIT_VER: ${{ needs.build-and-push.outputs.GIT_VER }}
+      HOST: ${{ vars.HOST }}
+      PORT: ${{ vars.PORT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      #- name: Deploy Helm chart 
+      #  uses: okar1/yc-helm@master
+      #  with:
+      #    SA_KEY: ${{ secrets.YC_SA_JSON_CREDENTIALS_FOR_HELM }}
+      #    K8S_CLUSTER_ID: ${{ vars.K8S_CLUSTER_ID }}
+      #    HELM_ARGS: upgrade --install -n=prj-chatgpt-prod prj-chatgpt-prod ./ops-tools/helm/chatgpt-bot -f ./ops-tools/helm/chatgpt-bot/setting/prod.yaml --set app.image.repository=cr.yandex/${{ env.CR_REGISTRY }}/${{ env.CR_REPO }},app.image.tag=${{ env.GIT_VER }}
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ env.PORT }}
+          script: |
+            git pull https://github.com/Caragius/hello-kubernetes.git || git clone https://github.com/Caragius/hello-kubernetes.git
+            helm upgrade --install --create-namespace --namespace hello-kubernetes hello-world ./hello-kubernetes/deploy/helm/hello-kubernetes/ --set deployment.container.image.repository=${{ env.CR_REGISTRY }}/${{ env.CR_REPO }},deployment.container.image.tag=${{ env.GIT_VER }}
